@@ -82,13 +82,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Image Prediction using AI</h1>
+        <h1>Image Prediction Classification </h1>
         <p>Upload an image and select a model to get predictions:</p>
         
         <!-- Model selection -->
         <select id="modelSelect">
-            <option value="best_model">Best Model</option>
-            <option value="efficientnet">EfficientNet</option>
+            <option value="best_model">CNN Functional API</option>
+            <option value="efficientnet">InceptionV3</option>
         </select>
 
         <!-- Image upload -->
@@ -145,7 +145,7 @@
 
                 // Display the result
                 if (response.ok) {
-                    resultDiv.innerHTML = `📌 Model: ${data.model}<br>🔍 Class: ${data.class}<br>🔹 Confidence: ${data.confidence.toFixed(2)}`;
+                    resultDiv.innerHTML = `<h2>📌 Model: ${data.model}<br>🔍 Class: ${data.class}<br>🔹 Confidence: ${data.confidence.toFixed(2)}</h2>`;
                 } else {
                     resultDiv.innerHTML = `❌ Error: ${data.error}`;
                 }
