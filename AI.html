@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Prediction using AI</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: #825151;
+            text-align: center;
+            padding: 50px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            color: #734848;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            animation: fadeIn 1s ease-in-out;
+        }
+        input[type="file"], select {
+            margin: 20px 0;
+            padding: 12px;
+            width: 90%;
+            border: 2px solid #8a6666;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f8f0f0;
+            color: #333;
+        }
+        button {
+            background-color: #007bff;
+            color: rgb(255, 255, 255);
+            border: none;
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(204, 204, 204, 0.9);
+            border-radius: 8px;
+            color: #333;
+        }
+        .result h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        #imagePreview {
+            margin-top: 20px;
+            border-radius: 10px;
+            border: 2px solid #8d5454;
+            max-width: 100%;
+            height: auto;
+            display: none; /* Only shown when an image is loaded */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Prediction using AI</h1>
+        <p>Upload an image and select a model to get predictions:</p>
+        
+        <!-- Model selection -->
+        <select id="modelSelect">
+            <option value="best_model">Best Model</option>
+            <option value="efficientnet">EfficientNet</option>
+        </select>
+
+        <!-- Image upload -->
+        <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+        <br><br>
+        <img id="imagePreview" width="300" height="300" alt="Image Preview">
+        <br><br>
+        <button onclick="predictImage()">Predict</button>
+        
+        <!-- Result display -->
+        <div class="result" id="result">
+            <h3>Result:</h3>
+            <p id="predictionResult"></p>
+        </div>
+    </div>
+
+    <script>
+        // Function to preview the selected image
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function () {
+                var img = document.getElementById("imagePreview");
+                img.src = reader.result;
+                img.style.display = "block";
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        // Function to send the image to the server for prediction
+        async function predictImage() {
+            let fileInput = document.getElementById("imageInput");
+            let model = document.getElementById("modelSelect").value;
+            let resultDiv = document.getElementById("predictionResult");
+
+            // Check if an image is selected
+            if (fileInput.files.length === 0) {
+                resultDiv.innerHTML = "❌ Please upload an image!";
+                return;
+            }
+
+            // Prepare the form data
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                // Send the request to the server
+                let response = await fetch(`http://127.0.0.1:8000/predict/?model_name=${model}`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                // Parse the response
+                let data = await response.json();
+
+                // Display the result
+                if (response.ok) {
+                    resultDiv.innerHTML = `📌 Model: ${data.model}<br>🔍 Class: ${data.class}<br>🔹 Confidence: ${data.confidence.toFixed(2)}`;
+                } else {
+                    resultDiv.innerHTML = `❌ Error: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = "❌ Failed to connect to the server!";
+            }
+        }
+    </script>
+</body>
+</html>
