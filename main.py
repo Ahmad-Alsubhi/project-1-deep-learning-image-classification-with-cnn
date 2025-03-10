@@ -225,8 +225,8 @@ app.add_middleware(
 @app.get("/")
 async def serve_index():
     """ تقديم ملف index.html عند زيارة الصفحة الرئيسية """
-    if os.path.exists("api/index.html"):
-        return FileResponse("api/index.html")
+    if os.path.exists("sss/index.html"):
+        return FileResponse("sss/index.html")
     return {"error": "❌ index.html not found!"}
 
 # ✅ Lazy Loading للنماذج
