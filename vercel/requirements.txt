@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+json
+tensorflow
+numpy
+PIL
+io
+os
+mangum
