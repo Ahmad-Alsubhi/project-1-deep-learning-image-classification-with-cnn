@@ -1,6 +1,3 @@
-
-
-
 from fastapi import FastAPI, File, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -10,41 +7,43 @@ from PIL import Image
 import io
 import json
 import os
-from mangum import Mangum  # لجعل FastAPI يعمل مع Vercel
+from mangum import Mangum 
 
-# ✅ إنشاء التطبيق
+# Initialize FastAPI app
 app = FastAPI()
 
-# ✅ إضافة CORS Middleware
+# Add CORS middleware to allow cross-origin requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # Allow all origins
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
-# ✅ تقديم index.html عند زيارة الصفحة الرئيسية
+# Route to serve the index.html file
 @app.get("/")
 async def serve_index():
-    """ تقديم ملف index.html عند زيارة الصفحة الرئيسية """
+    """Serve the index.html file when visiting the root endpoint."""
     if os.path.exists("websit/index.html"):
         return FileResponse("websit/index.html")
     return {"error": "❌ index.html not found!"}
 
-# ✅ Lazy Loading للنماذج
+# Global dictionaries to store loaded models and class labels
 models = {}
 class_labels = {}
 
 def load_model(model_name):
-    """ تحميل النموذج فقط عند الحاجة """
+    """Load a model only when needed."""
     if model_name in models:
-        return models[model_name]  # إذا كان محملاً مسبقًا، لا تعيد تحميله
+        return models[model_name]  # Return the model if already loaded
 
+    # Define model file paths
     model_files = {
         "best_model": "model/CNN.keras",
         "efficientnet": "model/InceptionV3_model.h5"
     }
 
+    # Load the model if the file exists
     if model_name in model_files and os.path.exists(model_files[model_name]):
         models[model_name] = tf.keras.models.load_model(model_files[model_name])
         print(f"✅ Model {model_name} loaded successfully!")
@@ -54,15 +53,17 @@ def load_model(model_name):
         return None
 
 def load_class_labels(model_name):
-    """ تحميل تسميات الفئات فقط عند الحاجة """
+    """Load class labels only when needed."""
     if model_name in class_labels:
-        return class_labels[model_name]
+        return class_labels[model_name]  # Return labels if already loaded
 
+    # Define label file paths
     label_files = {
         "best_model": "websit/class_labels_best_model.json",
         "efficientnet": "websit/class_labels_inceptionv3.json"
     }
 
+    # Load labels if the file exists
     if model_name in label_files and os.path.exists(label_files[model_name]):
         with open(label_files[model_name], "r") as f:
             class_labels[model_name] = json.load(f)
@@ -74,37 +75,38 @@ def load_class_labels(model_name):
         return {}
 
 def preprocess_image(image: Image.Image):
-    """ تحويل الصورة لتنسيق مناسب للنموذج """
-    image = image.convert("RGB")
-    image = image.resize((224, 224))
-    image = np.array(image) / 255.0
-    image = np.expand_dims(image, axis=0)
+    """Preprocess the image to make it suitable for the model."""
+    image = image.convert("RGB")  # Convert to RGB format
+    image = image.resize((224, 224))  # Resize to 224x224
+    image = np.array(image) / 255.0  # Normalize pixel values
+    image = np.expand_dims(image, axis=0)  # Add batch dimension
     return image
 
+# Route to handle image predictions
 @app.post("/predict/")
 async def predict(
     file: UploadFile = File(...),
     model_name: str = Query("best_model", enum=["best_model", "efficientnet"])
 ):
-    """ استقبال الصورة، اختيار النموذج، وإرجاع التوقعات """
+    """Receive an image, select the model, and return predictions."""
     try:
         print(f"📸 Received file: {file.filename}")
 
-        # ✅ قراءة الصورة
+        # Read and preprocess the image
         image = Image.open(io.BytesIO(await file.read()))
         image = preprocess_image(image)
 
-        # ✅ تحميل النموذج (إذا لم يكن محملاً مسبقًا)
+        # Load the model (if not already loaded)
         model = load_model(model_name)
         if model is None:
             return {"error": f"❌ Model {model_name} is not available!"}
 
-        # ✅ تنفيذ التوقعات
+        # Make predictions
         predictions = model.predict(image)
         predicted_class = str(np.argmax(predictions, axis=1)[0])
         confidence = float(np.max(predictions))
 
-        # ✅ تحميل التسميات (إذا لم تكن محملة مسبقًا)
+        # Load class labels (if not already loaded)
         model_classes = load_class_labels(model_name)
         predicted_label = model_classes.get(predicted_class, f"Unknown Class {predicted_class}")
 
@@ -113,5 +115,5 @@ async def predict(
     except Exception as e:
         return {"error": str(e)}
 
-# ✅ لجعل FastAPI يعمل على Vercel و Render
+# To make FastAPI work with Vercel and Render
 handler = Mangum(app)
